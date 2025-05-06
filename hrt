@@ -1,0 +1,108 @@
+#! /bin/bash
+
+# Gives me the number of days since I started HRT
+
+while [[ $# > 0 ]]
+do
+  OPT=$1
+  case $OPT in
+    -b|--birthday-only)
+      BIRTHDAY_ONLY=0
+      ;;
+  esac
+  shift
+done
+
+# MMM DD YYYY 12:00
+START_DATE="MMM DD YYYY 12:00"
+MMDD=$(date -d "$START_DATE" +"%m%d")
+
+# Today's date in mmdd
+TODAY=$(date +"%m%d")
+# Is today my HRT birthday?
+test "$TODAY" == "$MMDD"
+BIRTHDAY=$?
+
+if [[ $BIRTHDAY != "0" && $BIRTHDAY_ONLY = "0" ]]
+then
+  exit
+fi
+
+if [[ "$BIRTHDAY" == "0" ]]
+then
+  which pridect figlet &>/dev/null || { echo "Please install pridecat and figlet!"; exit; };
+  pridecat --transgender <(figlet HAPPY BIRTHDAY!!!)
+fi
+
+###############################################################################
+# Approximate "pretty" format
+# Gives me years, months, and days since my start date by doing modulo
+# arithmetic. The reason it's "approximate" is because the number of days in a
+# month varies.
+# 
+# For example, as I started HRT on August 26, a month with 31 days, 1 month and
+# 16 days after that will be October 11. However a month and 15 days after, for
+# example September 26 (a month with 30 days), is November 12. While you would
+# hope these would land on the same day of the month, that is not the case, and
+# you can't rely entirely on a quick glance to know how many days it's
+# "actually" been
+###############################################################################
+
+# Years
+START_YEARS=$( date -d "$START_DATE" +%Y )
+TODAY_YEARS=$( date +%Y )
+dYEARS=$(( TODAY_YEARS - START_YEARS ))
+
+# Months
+START_MONTHS=$( date -d "Aug 26 2022 12:00" +%m )
+TODAY_MONTHS=$( date +%m )
+dMONTHS=$(( 10#$TODAY_MONTHS - 10#$START_MONTHS ))
+
+# If dMONTHS is negative, a full year hasn't passed, so we subtract one year
+[ $dMONTHS -lt 0 ] && let dYEARS-=1
+
+# Days
+START_DAYS=$( date -d "$START_DATE" +%d )
+TODAY_DAYS=$( date +%d )
+dDAYS=$(( 10#$TODAY_DAYS - 10#$START_DAYS ))
+
+# Ensure dMONTHS is positive modulo 12
+dMONTHS=$(( (dMONTHS+12) % 12 ))
+
+# If dDAYS is negative, a full month hasn't passed, so we subtract one month
+[ $dDAYS -lt 0 ] && let dMONTHS-=1
+
+# Ensure dDAYS is positive modulo NUM_OF_DAYS_PREV_MONTH
+# i.e. the number of days between Feb 26 and March 7 (on not a leap year) is:
+# (7-26+28) % 28 = 9
+# Num Of Days Prev Month:
+NODPM=$(date -d "$(date -d "today" +"%b 1 %Y") -1 day" +%d)
+dDAYS=$(( (dDAYS+NODPM) % NODPM ))
+
+echo "You've been on HRT for approximately ${dYEARS} year(s) ${dMONTHS} month(s) and ${dDAYS} day(s)!"
+
+###############################################################################
+# The more "precise" computation for the number of days. It's more precise
+# because it uses the more granular unit of measurement of the two methods, a
+# change in seconds between my start date and now. I don't account for leap
+# days, because that requires too much thinking.
+###############################################################################
+
+# The date in seconds since 1970-01-01 00:00:00 UTC
+START_SECONDS=$( date -d "$START_DATE" +%s )
+TODAY_SECONDS=$( date +%s )
+
+# delta Seconds
+dSECONDS=$(( TODAY_SECONDS - START_SECONDS ))
+
+# delta Days
+dDAYS=$(( dSECONDS/(3600*24) ))
+
+# delta Years
+dYEARS=$(( dDAYS/365 ))
+
+# Days accounting for number of years already passed
+
+dDAYS=$(( dDAYS % 365 ))
+
+echo "More precisely, you've been on HRT for ${dYEARS} year(s) and ${dDAYS} day(s)!"
