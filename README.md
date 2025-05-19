@@ -17,4 +17,10 @@ Script that will tell you:
 - To get a birthday message when opening bash, put `hrt -b` in your `~/.bashrc`
   - You will need to install [pridecat](https://github.com/lunasorcery/pridecat) and [figlet](https://github.com/cmatsuoka/figlet) for formatting
 
+## NuShell Script
 
+I've also decided to write a [nushell](https://www.nushell.sh/) script to do the same thing.
+
+After performing similar steps as above, you can run it with `hrt.nu`.
+
+To get a birthday message when starting `nu`, put `hrt.nu -b` in your `$nu.config-path`.
